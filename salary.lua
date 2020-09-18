@@ -1,6 +1,6 @@
 script_name("MoneySession")
 script_authors("Ravskiy1")
-script_version("1.05")
+script_version(1.05)
 
 
 local dlstatus = require('moonloader').download_status
