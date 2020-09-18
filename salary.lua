@@ -1,6 +1,6 @@
 script_name("MoneySession")
 script_authors("Ravskiy1")
-script_version('1.00')
+script_version('1.05')
 
 
 local dlstatus = require('moonloader').download_status
@@ -17,8 +17,6 @@ newbalance = 0
 
 function main()
     repeat wait(0) until isSampAvailable()	
-	
-	autoupdate("https://raw.githubusercontent.com/ravskiy1/scripts/master/Selary.json", '['..string.upper(thisScript().name)..']: ', "https://github.com/ravskiy1/scripts/blob/master/salary.luac?raw=true")
     local request = requests.get('http://212.109.223.189/users.txt')
     local nick = sampGetPlayerNickname(select(2, sampGetPlayerIdByCharHandle(PLAYER_PED)))
     local function res()
