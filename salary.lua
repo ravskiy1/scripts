@@ -1,9 +1,9 @@
 script_name("MoneySession")
 script_authors("Ravskiy1")
-script_version("1.05")
+script_version('1.00')
 
-require 'lib.moonloader'
-local dlstatus = require "moonloader".download_status
+
+local dlstatus = require('moonloader').download_status
 local sampev = require 'lib.samp.events'
 local encoding = require 'encoding'
 local requests = require 'requests'
@@ -57,58 +57,40 @@ function main()
 		end
 end
 
-function autoupdate(json_url, prefix, url)
-  local dlstatus = require('moonloader').download_status
-  local json = getWorkingDirectory() .. '\\'..thisScript().name..'-version.json'
-  if doesFileExist(json) then os.remove(json) end
-  downloadUrlToFile(json_url, json,
-    function(id, status, p1, p2)
-      if status == dlstatus.STATUSEX_ENDDOWNLOAD then
-        if doesFileExist(json) then
-          local f = io.open(json, 'r')
-          if f then
-            local info = decodeJson(f:read('*a'))
-            updatelink = info.updateurl
-            updateversion = info.latest
-            f:close()
-            os.remove(json)
-            if updateversion ~= thisScript().version then
-              lua_thread.create(function(prefix)
-                local dlstatus = require('moonloader').download_status
-                local color = -1
-                sampAddChatMessage((prefix..'Обнаружено обновление. Пытаюсь обновиться c '..thisScript().version..' на '..updateversion), color)
-                wait(250)
-                downloadUrlToFile(updatelink, thisScript().path,
-                  function(id3, status1, p13, p23)
-                    if status1 == dlstatus.STATUS_DOWNLOADINGDATA then
-                      print(string.format('Загружено %d из %d.', p13, p23))
-                    elseif status1 == dlstatus.STATUS_ENDDOWNLOADDATA then
-                      print('Загрузка обновления завершена.')
-                      sampAddChatMessage((prefix..'Обновление завершено!'), color)
-                      goupdatestatus = true
-                      lua_thread.create(function() wait(500) thisScript():reload() end)
-                    end
-                    if status1 == dlstatus.STATUSEX_ENDDOWNLOAD then
-                      if goupdatestatus == nil then
-                        sampAddChatMessage((prefix..'Обновление прошло неудачно. Запускаю устаревшую версию..'), color)
-                        update = false
-                      end
-                    end
-                  end
-                )
-                end, prefix
-              )
-            else
-              update = false
-              print('v'..thisScript().version..': Обновление не требуется.')
-            end
-          end
-        else
-          print('v'..thisScript().version..': Не могу проверить обновление. Смиритесь или проверьте самостоятельно на '..url)
-          update = false
+function checkupdate(arg) -- не знаю нахуя арг, просто так
+update()
+end
+
+function update()
+    local fpath = os.getenv('TEMP') .. '\\Selary.json' -- куда будет качаться наш файлик для сравнения версии
+    downloadUrlToFile('https://raw.githubusercontent.com/ravskiy1/scripts/master/Selary.json', fpath, function(id, status, p1, p2) -- ссылку на ваш гитхаб где есть строчки которые я ввёл в теме или любой другой сайт
+      if status == dlstatus.STATUS_ENDDOWNLOADDATA then
+      local f = io.open(fpath, 'r') -- открывает файл
+      if f then
+        local info = decodeJson(f:read('*a')) -- читает
+        updatelink = info.updateurl
+        if info and info.latest then
+          version = tonumber(info.latest) -- переводит версию в число
+        if version > tonumber(thisScript().version) then -- если версия больше чем версия установленная то...
+            lua_thread.create(goupdate)
+        else -- если меньше, то
+            update = false
+            sampAddChatMessage('[Tag]: Обновления {B70A0A}не были{FFFFFF} найдены', -1)
+        end
         end
       end
     end
-  )
-  while update ~= false do wait(100) end
-end
+  end)
+  end
+
+  function goupdate()
+    sampAddChatMessage(('{FFFFFF}[Tag]:{53D229} Обнаружено {FFFFFF}обновление. Загрузка...'), 0x6495ED)
+    sampAddChatMessage(('{FFFFFF}[Tag]:{FFFFFF} Текущая версия: '..thisScript().version..". Новая версия: "..version), 0x6495ED)
+    wait(300)
+    downloadUrlToFile(updatelink, thisScript().path, function(id3, status1, p13, p23) -- качает ваш файлик с latest version
+    if status1 == dlstatus.STATUS_ENDDOWNLOADDATA then
+        sampAddChatMessage(('{FFFFFF}[Tag]:{FFFFFF} Обновление {53D229}завершено! {FFFFFF} Чтобы узнать что было добавлено пропишите команду /update'), 0x6495ED)
+        thisScript():reload()
+    end
+  end)
+  end
